@@ -3,12 +3,10 @@
 #include <sstream>
 #include <fstream>
 #include <curl/curl.h>
-#include <json.hpp>
 
 #include <windows.h>
 
 using namespace std;
-using json = nlohmann::json;
 
 
 
@@ -62,6 +60,13 @@ int fetchword(const string& word, string& res)
     return ret;
 }
 
+bool all_are_letters(const string& str)
+{
+    for (auto& c: str) {
+        if (!isalpha(c)) return false;
+    }
+    return true;
+}
 
 int main()
 {
@@ -70,13 +75,6 @@ int main()
     ifstream conf("conf");
     conf >> app_id >> app_key;
 
-    json j;
-
-    // ifstream jsonf("res.json");
-    // jsonf >> j;
-
-    // ofstream file(filename);
-    // ofstream file(filename, ios::app);
 
     string word, response;
     string jsonstr = "{app_id:"+app_id+",app_key:"+app_key+"}";
@@ -99,28 +97,19 @@ int main()
 
         cout << buffer << endl;
         cout << word << endl << endl;
-        // file << buffer << endl;
 
-
-        // get response from oxford dict
-        int ret = fetchword("world", response);
-        cout << response << endl << ret << endl;
-
-        // parse json response
-        j = json::parse(response);
-        cout << j["results"][0]["lexicalEntries"][0]["entries"][0]
-            ["senses"][0]["definitions"][0] << endl;
-
+        if (all_are_letters(word)) {
+            // word = "prestidigitation";
+            string url = "https://www.google.com/search?q=define+";
+            url.append(word);
+            system(string("open " + url).c_str());
+        }
 
 
         CloseClipboard();
     }
 
 
-    // cout << j["results"][0]["lexicalEntries"][0]["entries"][0]
-    //     ["senses"][1]["definitions"][0];
-
-    // file.close();
 
     return 0;
 }
