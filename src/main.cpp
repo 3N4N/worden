@@ -8,6 +8,9 @@
 
 using namespace std;
 
+
+
+
 string filename = "e:/documents/words.txt";
 string url = "https://od-api.oxforddictionaries.com/api/v2/entries/en-gb/";
 string app_id;
@@ -16,13 +19,15 @@ string app_key;
 
 
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+size_t writeCallback(char *contents, size_t size, size_t nmemb, void *userp)
 {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-int fetchword(const string& word)
+
+
+int fetchword(const string& word, string& res)
 {
     CURLcode ret;
     CURL *hnd;
@@ -42,6 +47,8 @@ int fetchword(const string& word)
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
     curl_easy_setopt(hnd, CURLOPT_FTP_SKIP_PASV_IP, 1L);
     curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &res);
 
     ret = curl_easy_perform(hnd);
 
@@ -64,7 +71,7 @@ int main()
     // ofstream file(filename);
     // ofstream file(filename, ios::app);
 
-    string word;
+    string word, response;
     string jsonstr = "{app_id:"+app_id+",app_key:"+app_key+"}";
     cout << jsonstr <<endl;
 
@@ -84,8 +91,8 @@ int main()
         // file << buffer << endl;
 
 
-        int ret = fetchword("world");
-        cout << endl << ret << endl;
+        int ret = fetchword("world", response);
+        cout << response << endl << ret << endl;
 
 
 
