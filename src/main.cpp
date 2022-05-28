@@ -3,10 +3,12 @@
 #include <sstream>
 #include <fstream>
 #include <curl/curl.h>
+#include <json.hpp>
 
 #include <windows.h>
 
 using namespace std;
+using json = nlohmann::json;
 
 
 
@@ -68,6 +70,11 @@ int main()
     ifstream conf("conf");
     conf >> app_id >> app_key;
 
+    json j;
+
+    // ifstream jsonf("res.json");
+    // jsonf >> j;
+
     // ofstream file(filename);
     // ofstream file(filename, ios::app);
 
@@ -76,12 +83,16 @@ int main()
     cout << jsonstr <<endl;
 
     if (OpenClipboard(0)) {
+        // get text from system clipboard
         HANDLE hData = GetClipboardData(CF_TEXT);
         string buffer = (char *)GlobalLock(hData);
 
 
+        // choose only the first word
         stringstream ss(buffer);
         ss >> word;
+
+        // lowercase it
         for (auto& c : word) {
             c = tolower(c);
         }
@@ -91,14 +102,23 @@ int main()
         // file << buffer << endl;
 
 
+        // get response from oxford dict
         int ret = fetchword("world", response);
         cout << response << endl << ret << endl;
+
+        // parse json response
+        j = json::parse(response);
+        cout << j["results"][0]["lexicalEntries"][0]["entries"][0]
+            ["senses"][0]["definitions"][0] << endl;
 
 
 
         CloseClipboard();
     }
 
+
+    // cout << j["results"][0]["lexicalEntries"][0]["entries"][0]
+    //     ["senses"][1]["definitions"][0];
 
     // file.close();
 
