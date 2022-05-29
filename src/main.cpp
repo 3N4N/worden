@@ -6,7 +6,10 @@
 
 #include <windows.h>
 
+#include "json.hpp"
+
 using namespace std;
+using json = nlohmann::json;
 
 
 
@@ -68,6 +71,18 @@ bool all_are_letters(const string& str)
     return true;
 }
 
+void parse_json(const string& res)
+{
+    json j = json::parse(res);
+    j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
+    cout << j.size() << "\n\n";
+    for (int i = 0; i < j.size(); i++) {
+        string s = j[i]["definitions"][0];
+        s.erase(remove(s.begin(), s.end(), '"'), s.end());
+        cout << i+1 << ": " << s << endl;
+    }
+}
+
 int main()
 {
     const string whitespace = " \t";
@@ -75,6 +90,8 @@ int main()
     ifstream conf("conf");
     conf >> app_id >> app_key;
 
+    // ofstream file(filename);
+    ofstream file(filename, ios::app);
 
     string word, response;
     string jsonstr = "{app_id:"+app_id+",app_key:"+app_key+"}";
@@ -98,18 +115,34 @@ int main()
         cout << buffer << endl;
         cout << word << endl << endl;
 
-        if (all_are_letters(word)) {
-            // word = "prestidigitation";
-            string url = "https://www.google.com/search?q=define+";
-            url.append(word);
-            system(string("open " + url).c_str());
-        }
+        word = "prestidigitation";
 
+        // if (all_are_letters(word)) {
+        //     string url = "https://www.google.com/search?q=define+";
+        //     url.append(word);
+        //     system(string("open " + url).c_str());
+        // }
+
+
+        // ifstream jres("res.json");
+        // json j;
+        // jres >> j;
+        // jres.close();
+        // response = j.dump();
+
+        int ret = fetchword(word, response);
+        // cout << response << endl << ret << endl;
+
+        if (all_are_letters(word)) {
+            parse_json(response);
+        }
 
         CloseClipboard();
     }
 
 
+    file.close();
+    conf.close();
 
     return 0;
 }
