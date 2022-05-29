@@ -14,7 +14,7 @@ using json = nlohmann::json;
 
 
 
-string filename = "e:/documents/words.txt";
+string filename;
 string url = "https://od-api.oxforddictionaries.com/api/v2/entries/en-gb/";
 string app_id;
 string app_key;
@@ -75,13 +75,13 @@ string parse_json(const string& res)
 {
     json j = json::parse(res);
     j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
-    cout << j.size() << "\n\n";
+    cout << j.size();
 
     string ret("");
     for (int i = 0; i < j.size(); i++) {
         string s = j[i]["definitions"][0];
         s.erase(remove(s.begin(), s.end(), '"'), s.end());
-        ret.append(to_string(i+1) + ": " + s + "\n");
+        ret.append("    " + to_string(i+1) + ": " + s + "\n");
     }
 
     return ret;
@@ -91,14 +91,13 @@ int main()
 {
     const string whitespace = " \t";
 
-    ifstream conf("conf");
-    conf >> app_id >> app_key;
+    ifstream fconf("conf");
+    fconf >> app_id >> app_key >> filename;
 
-    // ofstream file(filename);
-    ofstream file(filename, ios::app);
+    ofstream fout(filename, ios::app);
 
     string word, response;
-    string jsonstr = "{app_id:"+app_id+",app_key:"+app_key+"}";
+    string jsonstr = "{"+app_id+","+app_key+"}";
     cout << jsonstr <<endl;
 
     if (OpenClipboard(0)) {
@@ -119,13 +118,13 @@ int main()
         cout << buffer << endl;
         cout << word << endl << endl;
 
-        word = "prestidigitation";
+        // word = "music";
 
-        // if (all_are_letters(word)) {
-        //     string url = "https://www.google.com/search?q=define+";
-        //     url.append(word);
-        //     system(string("open " + url).c_str());
-        // }
+        if (all_are_letters(word)) {
+            string url = "https://www.google.com/search?q=define+";
+            url.append(word);
+            system(string("open " + url).c_str());
+        }
 
 
         // ifstream jres("res.json");
@@ -135,20 +134,21 @@ int main()
         // response = j.dump();
 
         int ret = fetchword(word, response);
-        // cout << response << endl << ret << endl;
+        cout << ret << endl;
+        // cout << response << endl;
 
-        string result;
-        if (all_are_letters(word)) {
+        if (!ret && all_are_letters(word)) {
+            string result;
             result = parse_json(response);
+            fout << word << "\n" << result << "\n\n";
         }
-        cout << result << endl;
 
         CloseClipboard();
     }
 
 
-    file.close();
-    conf.close();
+    fout.close();
+    fconf.close();
 
     return 0;
 }
