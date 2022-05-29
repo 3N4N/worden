@@ -12,9 +12,11 @@ using namespace std;
 using json = nlohmann::json;
 
 
+#define OPEN_IN_BROWSER 0
 
 
-string filename;
+string fnout;
+string fnconf = "conf.json";
 string url = "https://od-api.oxforddictionaries.com/api/v2/entries/en-gb/";
 string app_id;
 string app_key;
@@ -38,8 +40,8 @@ int fetchword(const string& word, string& res)
 
     slist1 = NULL;
     slist1 = curl_slist_append(slist1, "Content-Type: application/json");
-    slist1 = curl_slist_append(slist1, app_id.c_str());
-    slist1 = curl_slist_append(slist1, app_key.c_str());
+    slist1 = curl_slist_append(slist1, string("app_id:"+app_id).c_str());
+    slist1 = curl_slist_append(slist1, string("app_key:"+app_key).c_str());
 
     hnd = curl_easy_init();
     curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
@@ -75,7 +77,7 @@ string parse_json(const string& res)
 {
     json j = json::parse(res);
     j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
-    cout << j.size();
+    cout << j.size() << "\n\n";
 
     string ret("");
     for (int i = 0; i < j.size(); i++) {
@@ -90,15 +92,25 @@ string parse_json(const string& res)
 int main()
 {
     const string whitespace = " \t";
+    json j;
 
-    ifstream fconf("conf");
-    fconf >> app_id >> app_key >> filename;
+    ifstream fconf(fnconf);
+    json jconf;
+    fconf >> jconf;
 
-    ofstream fout(filename, ios::app);
+    string str;
+    fconf >> str;
+    cout << str;
+
+    app_id = jconf["app_id"];
+    app_key = jconf["app_key"];
+    fnout = jconf["outfile"];
+
+    ofstream fout(fnout, ios::app);
 
     string word, response;
-    string jsonstr = "{"+app_id+","+app_key+"}";
-    cout << jsonstr <<endl;
+    string jsonstr = "{app_id:"+app_id+",app_key:"+app_key+"}";
+    cout << jsonstr << endl;
 
     if (OpenClipboard(0)) {
         // get text from system clipboard
@@ -118,29 +130,30 @@ int main()
         cout << buffer << endl;
         cout << word << endl << endl;
 
-        // word = "music";
+        word = "prestidigitation";
 
-        if (all_are_letters(word)) {
+        if (all_are_letters(word) && OPEN_IN_BROWSER) {
             string url = "https://www.google.com/search?q=define+";
             url.append(word);
             system(string("open " + url).c_str());
         }
 
 
-        // ifstream jres("res.json");
-        // json j;
-        // jres >> j;
-        // jres.close();
+        // ifstream fjson("res.json");
+        // fjson >> j;
+        // fjson.close();
         // response = j.dump();
 
-        int ret = fetchword(word, response);
+        int ret = 0;
+        ret = fetchword(word, response);
         cout << ret << endl;
         // cout << response << endl;
+
 
         if (!ret && all_are_letters(word)) {
             string result;
             result = parse_json(response);
-            fout << word << "\n" << result << "\n\n";
+            cout << word << "\n" << result << "\n\n";
         }
 
         CloseClipboard();
