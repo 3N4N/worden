@@ -71,16 +71,20 @@ bool all_are_letters(const string& str)
     return true;
 }
 
-void parse_json(const string& res)
+string parse_json(const string& res)
 {
     json j = json::parse(res);
     j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
     cout << j.size() << "\n\n";
+
+    string ret("");
     for (int i = 0; i < j.size(); i++) {
         string s = j[i]["definitions"][0];
         s.erase(remove(s.begin(), s.end(), '"'), s.end());
-        cout << i+1 << ": " << s << endl;
+        ret.append(to_string(i+1) + ": " + s + "\n");
     }
+
+    return ret;
 }
 
 int main()
@@ -133,9 +137,11 @@ int main()
         int ret = fetchword(word, response);
         // cout << response << endl << ret << endl;
 
+        string result;
         if (all_are_letters(word)) {
-            parse_json(response);
+            result = parse_json(response);
         }
+        cout << result << endl;
 
         CloseClipboard();
     }
