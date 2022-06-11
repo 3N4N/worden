@@ -1,5 +1,7 @@
 bin/
+build/
 *.out
 *.exe
 tags
-conf
+conf.json
+out.txt

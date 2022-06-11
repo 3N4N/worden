@@ -2,7 +2,8 @@ CC     := g++
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS := -std=c++17 -g -I inc/
-	LIBS   := curl
+	# CFLAGS := -std=c++17 -static-libgcc -static-libstdc++ -I inc/
+	LIBS   := -lcurl
 	EXE    := out.exe
 else
 	CFLAGS := -std=c++17 -g -I inc/ -fsanitize=address
@@ -26,7 +27,7 @@ $(DIRS):
 	mkdir -p $@
 
 $(EXE): $(OBJS)
-	$(CC) -o $@ $^ -l $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 bin/%.o: src/%.cpp
 	$(CC) $(CFLAGS) -o $@ -c $< -MMD -MF $(@:.o=.d)

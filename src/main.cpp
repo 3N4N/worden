@@ -130,7 +130,7 @@ int main()
         cout << buffer << endl;
         cout << word << endl << endl;
 
-        word = "prestidigitation";
+        // word = "prestidigitation";
 
         if (all_are_letters(word) && OPEN_IN_BROWSER) {
             string url = "https://www.google.com/search?q=define+";
