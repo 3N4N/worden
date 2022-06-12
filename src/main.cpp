@@ -17,7 +17,12 @@ using json = nlohmann::json;
 
 string fnout;
 string fnconf = "conf.json";
-string url = "https://od-api.oxforddictionaries.com/api/v2/entries/en-gb/";
+
+string url = "https://od-api.oxforddictionaries.com/api/v2/"; // entries/en-gb/";
+string lang = "en/";
+string query_meaning = "entries/";
+string query_baseword = "lemmas/";
+
 string app_id;
 string app_key;
 
@@ -32,11 +37,14 @@ size_t writeCallback(char *contents, size_t size, size_t nmemb, void *userp)
 
 
 
-int fetchword(const string& word, string& res)
+int getresponse(const string& word, const string& res, const string& query)
 {
     CURLcode ret;
     CURL *hnd;
     struct curl_slist *slist1;
+
+    string fullurl = url + query + lang + word;
+    cout << fullurl << endl;
 
     slist1 = NULL;
     slist1 = curl_slist_append(slist1, "Content-Type: application/json");
@@ -45,13 +53,15 @@ int fetchword(const string& word, string& res)
 
     hnd = curl_easy_init();
     curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
-    curl_easy_setopt(hnd, CURLOPT_URL,url.append(word).c_str());
+    curl_easy_setopt(hnd, CURLOPT_URL,fullurl.c_str());
     curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
     curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.79.1");
+    curl_easy_setopt(hnd, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
     curl_easy_setopt(hnd, CURLOPT_FTP_SKIP_PASV_IP, 1L);
     curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
+    // curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "GET");
     curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &res);
 
@@ -73,7 +83,13 @@ bool all_are_letters(const string& str)
     return true;
 }
 
-string parse_json(const string& res)
+string parse_baseword(const string& res)
+{
+    json j = json::parse(res);
+    return j["results"][0]["lexicalEntries"][0]["inflectionOf"][0]["id"];
+}
+
+string parse_meaning(const string& res)
 {
     json j = json::parse(res);
     j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
@@ -130,7 +146,7 @@ int main()
         cout << buffer << endl;
         cout << word << endl << endl;
 
-        // word = "prestidigitation";
+        word = "mice";
 
         if (all_are_letters(word) && OPEN_IN_BROWSER) {
             string url = "https://www.google.com/search?q=define+";
@@ -144,16 +160,26 @@ int main()
         // fjson.close();
         // response = j.dump();
 
+
         int ret = 0;
-        ret = fetchword(word, response);
-        cout << ret << endl;
-        // cout << response << endl;
+        if (all_are_letters(word)) {
+            ret = getresponse(word, response, query_baseword);
+            // cout << response << endl;
 
+            if (!ret) {
+                string baseword;
+                baseword = parse_baseword(response);
 
-        if (!ret && all_are_letters(word)) {
-            string result;
-            result = parse_json(response);
-            cout << word << "\n" << result << "\n\n";
+                response.clear();
+                ret = getresponse(baseword, response, query_meaning);
+                cout << response << endl;
+
+                if (!ret) {
+                    string result;
+                    result = parse_meaning(response);
+                    cout << baseword << "\n" << result << "\n\n";
+                }
+            }
         }
 
         CloseClipboard();
