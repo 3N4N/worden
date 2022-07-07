@@ -1,7 +1,9 @@
 bin/
 build/
+.cache
 *.out
 *.exe
 tags
 conf.json
 out.txt
+compile_commands.json
