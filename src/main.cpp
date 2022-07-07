@@ -107,17 +107,17 @@ string parse_meaning(const string& res)
     for (json k : i["lexicalEntries"]) {
       s = k["lexicalCategory"]["text"];
       remQuotes(s);
-      ss << "  " << s << "\n";
+      ss << string(2, ' ') << s << "\n";
       for (json m : k["entries"]) {
         int _i = 0;
         for (json n : m["senses"]) {
           s = n["definitions"][0];
           remQuotes(s);
-          ss << "    " << _i++ + 1 << ". " << s << "\n";
+          ss << string(4, ' ') << _i++ + 1 << ". " << s << "\n";
           for (json p : n["subsenses"]) {
             s = p["definitions"][0];
             remQuotes(s);
-            ss << "        " << "* " << s << "\n";
+            ss << string(8, ' ') << "* " << s << "\n";
           }
           ss << "\n";
         }
