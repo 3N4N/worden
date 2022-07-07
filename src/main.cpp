@@ -89,20 +89,43 @@ string parse_baseword(const string& res)
   return j["results"][0]["lexicalEntries"][0]["inflectionOf"][0]["id"];
 }
 
+void remQuotes(string& s)
+{
+  s.erase(remove(s.begin(), s.end(), '"'), s.end());
+}
+
 string parse_meaning(const string& res)
 {
   json j = json::parse(res);
-  j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
-  cout << j.size() << "\n\n";
+  json _j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
+  cout << _j.size() << "\n\n";
 
-  string ret("");
-  for (int i = 0; i < j.size(); i++) {
-    string s = j[i]["definitions"][0];
-    s.erase(remove(s.begin(), s.end(), '"'), s.end());
-    ret.append("    " + to_string(i+1) + ": " + s + "\n");
+  string s;
+  stringstream ss;
+
+  for (json i : j["results"]) {
+    for (json k : i["lexicalEntries"]) {
+      s = k["lexicalCategory"]["text"];
+      remQuotes(s);
+      ss << "  " << s << "\n";
+      for (json m : k["entries"]) {
+        int _i = 0;
+        for (json n : m["senses"]) {
+          s = n["definitions"][0];
+          remQuotes(s);
+          ss << "    " << _i++ + 1 << ". " << s << "\n";
+          for (json p : n["subsenses"]) {
+            s = p["definitions"][0];
+            remQuotes(s);
+            ss << "        " << "* " << s << "\n";
+          }
+          ss << "\n";
+        }
+      }
+    }
   }
 
-  return ret;
+  return ss.str();
 }
 
 int main()
@@ -172,7 +195,7 @@ int main()
 
         response.clear();
         ret = getresponse(baseword, response, query_meaning);
-        cout << response << endl;
+        // cout << response << endl;
 
         if (!ret) {
           string result;
