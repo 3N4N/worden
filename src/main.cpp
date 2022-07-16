@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -11,14 +12,12 @@
 using namespace std;
 using json = nlohmann::json;
 
-
 #define OPEN_IN_BROWSER 0
-
 
 string fnout;
 string fnconf = "conf.json";
 
-string url = "https://od-api.oxforddictionaries.com/api/v2/"; // entries/en-gb/";
+string url = "https://od-api.oxforddictionaries.com/api/v2/";  // entries/en-gb/";
 string lang = "en/";
 string query_meaning = "entries/";
 string query_baseword = "lemmas/";
@@ -26,16 +25,27 @@ string query_baseword = "lemmas/";
 string app_id;
 string app_key;
 
+// #ifdef DEBUG
+// bool DEBUG = true;
+// #else
+// bool DEBUG = false;
+// #endif
 
-
+#ifdef DEBUG
+# define DLOG(fmt, ...) \
+  do { \
+    fprintf(stderr, fmt, __VA_ARGS__); \
+  } while (0)
+#else
+# define DLOG(fmt, ...) \
+  do { } while (0)
+#endif
 
 size_t writeCallback(char *contents, size_t size, size_t nmemb, void *userp)
 {
-  ((std::string*)userp)->append((char*)contents, size * nmemb);
+  ((std::string *)userp)->append((char *)contents, size * nmemb);
   return size * nmemb;
 }
-
-
 
 int getresponse(const string& word, const string& res, const string& query)
 {
@@ -44,16 +54,16 @@ int getresponse(const string& word, const string& res, const string& query)
   struct curl_slist *slist1;
 
   string fullurl = url + query + lang + word;
-  cout << fullurl << endl;
+  DLOG("%s\n", fullurl.c_str());
 
   slist1 = NULL;
   slist1 = curl_slist_append(slist1, "Content-Type: application/json");
-  slist1 = curl_slist_append(slist1, string("app_id:"+app_id).c_str());
-  slist1 = curl_slist_append(slist1, string("app_key:"+app_key).c_str());
+  slist1 = curl_slist_append(slist1, string("app_id:" + app_id).c_str());
+  slist1 = curl_slist_append(slist1, string("app_key:" + app_key).c_str());
 
   hnd = curl_easy_init();
   curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
-  curl_easy_setopt(hnd, CURLOPT_URL,fullurl.c_str());
+  curl_easy_setopt(hnd, CURLOPT_URL, fullurl.c_str());
   curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);
   curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
   curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.79.1");
@@ -78,7 +88,9 @@ int getresponse(const string& word, const string& res, const string& query)
 bool all_are_letters(const string& str)
 {
   for (auto& c: str) {
-    if (!isalpha(c)) return false;
+    if (!isalpha(c)) {
+      return false;
+    }
   }
   return true;
 }
@@ -98,7 +110,7 @@ string parse_meaning(const string& res)
 {
   json j = json::parse(res);
   json _j = j["results"][0]["lexicalEntries"][0]["entries"][0]["senses"];
-  cout << _j.size() << "\n\n";
+  DLOG("%d\n", _j.size());
 
   string s;
   stringstream ss;
@@ -119,7 +131,7 @@ string parse_meaning(const string& res)
             remQuotes(s);
             ss << string(8, ' ') << "* " << s << "\n";
           }
-          ss << "\n";
+          // ss << "\n";
         }
       }
     }
@@ -128,8 +140,18 @@ string parse_meaning(const string& res)
   return ss.str();
 }
 
-int main()
+void print_usage()
 {
+  cout << "Usage:\t worden.exe <word>\n";
+}
+
+int main(int argc, char **argv)
+{
+  if (!argc) {
+    print_usage();
+    return 0;
+  }
+
   const string whitespace = " \t";
   json j;
 
@@ -139,7 +161,7 @@ int main()
 
   string str;
   fconf >> str;
-  cout << str;
+  DLOG("%s\n", str.c_str());
 
   app_id = jconf["app_id"];
   app_key = jconf["app_key"];
@@ -148,66 +170,55 @@ int main()
   ofstream fout(fnout, ios::app);
 
   string word, response;
-  string jsonstr = "{app_id:"+app_id+",app_key:"+app_key+"}";
-  cout << jsonstr << endl;
+  string jsonstr = "{app_id:" + app_id + ",app_key:" + app_key + "}";
+  DLOG("%s\n", jsonstr.c_str());
 
-  if (OpenClipboard(0)) {
-    // get text from system clipboard
-    HANDLE hData = GetClipboardData(CF_TEXT);
-    string buffer = (char *)GlobalLock(hData);
+  string buffer = argv[1];
 
+  // choose only the first word
+  stringstream ss(buffer);
+  ss >> word;
 
-    // choose only the first word
-    stringstream ss(buffer);
-    ss >> word;
+  // lowercase it
+  for (auto& c : word) {
+    c = tolower(c);
+  }
 
-    // lowercase it
-    for (auto& c : word) {
-      c = tolower(c);
-    }
+  DLOG("%s --> %s\n", buffer.c_str(), word.c_str());
 
-    cout << buffer << endl;
-    cout << word << endl << endl;
+  // word = "mice";
 
-    word = "mice";
+  if (all_are_letters(word) && OPEN_IN_BROWSER) {
+    string url = "https://www.google.com/search?q=define+";
+    url.append(word);
+    system(string("open " + url).c_str());
+  }
 
-    if (all_are_letters(word) && OPEN_IN_BROWSER) {
-      string url = "https://www.google.com/search?q=define+";
-      url.append(word);
-      system(string("open " + url).c_str());
-    }
+  // ifstream fjson("res.json");
+  // fjson >> j;
+  // fjson.close();
+  // response = j.dump();
 
+  int ret = 0;
+  if (all_are_letters(word)) {
+    ret = getresponse(word, response, query_baseword);
+    // cout << response << endl;
 
-    // ifstream fjson("res.json");
-    // fjson >> j;
-    // fjson.close();
-    // response = j.dump();
+    if (!ret) {
+      string baseword;
+      baseword = parse_baseword(response);
 
-
-    int ret = 0;
-    if (all_are_letters(word)) {
-      ret = getresponse(word, response, query_baseword);
+      response.clear();
+      ret = getresponse(baseword, response, query_meaning);
       // cout << response << endl;
 
       if (!ret) {
-        string baseword;
-        baseword = parse_baseword(response);
-
-        response.clear();
-        ret = getresponse(baseword, response, query_meaning);
-        // cout << response << endl;
-
-        if (!ret) {
-          string result;
-          result = parse_meaning(response);
-          cout << baseword << "\n" << result << "\n\n";
-        }
+        string result;
+        result = parse_meaning(response);
+        cout << baseword << "\n" << result << "\n\n";
       }
     }
-
-    CloseClipboard();
   }
-
 
   fout.close();
   fconf.close();
